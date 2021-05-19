@@ -14,7 +14,7 @@ In the case of designing Ren's QF rounds, we already have every Darknode Operato
 
 So we can simply let DNOs distribute their voting power towards the proposals they support in a Funding Round, and have that dictate how much funding the different proposals receive (with some caveats)! Very elegant.
 
-Below is a proposal for how Quadratic Funding could take place for Ren, with concrete numbers to provide some intuition for how it could turn out in reality. The numbers are made up but shows the outcome of a Funding Round where there are 10 proposals in it. I am including how it would look like if people were voting randomly, as well as how it would look like if there were a few very popular proposals that most people voted for. And for both of those cases I'll be showing how the amount of capital in the funding pool would influence the funding for the proposals.
+Below is a proposal for how Quadratic Funding could take place at Ren, with concrete numbers to provide some intuition for how it could turn out in reality. The numbers are made up but 'realistic' and designed to be educational. I am also including how it would look like if people were voting randomly, as well as how it would look like if there were a few very popular proposals that most people voted for. And for both of those cases I'll be showing how the amount of capital in the funding pool would influence the funding for the proposals.
 
 ---
 
@@ -22,18 +22,18 @@ Below is a proposal for how Quadratic Funding could take place for Ren, with con
 
 The QF algorithm works very simply like this:
 
-- Take the square root (√) of every vote. So if I have 10 voting power, and I assign 5 VP to one proposal, and 3 VP to another and 2 VP to a third one, those are three different votes, so each one is square rooted separately.
+- Take the square root (√) of every vote. So if I have 10 voting power, and I assign 5 VP to one proposal, and 3 VP to another and 2 VP to a third one, those are three different votes, so each one is square rooted separately
 - For each proposal, sum up all the votes for it (votes which have been square rooted)
-- Then you square (^2) the summed up values for each proposal.
+- Then you square (^2) the summed up values for each proposal
 
 What you are left with then is a number you can convert to a percentage that it should get from the funding pool.
 
 Here is a simplified example:
 
 ```{r include=FALSE}
-vote <- c(5, 3, 2, 6, 10, 20)
-voter <- c(1, 1, 1, 2, 2, 3)
-proposal <- c(1, 2, 3, 1, 1, 3)
+vote <- c(5, 3, 2, 6, 10, 4, 36)
+voter <- c(1, 1, 1, 2, 2, 3, 3)
+proposal <- c(1, 2, 3, 1, 1, 1, 3)
 
 example <- data.frame(vote, voter, proposal)
 ```
@@ -53,7 +53,7 @@ example
 
 ```{r include=FALSE}
 proposal <- c(1, 2, 3)
-combinedVotingPower <- c(7.847836, 1.732051, 5.88635)
+combinedVotingPower <- c(9.847836, 1.732051, 7.414214)
 
 example <- data.frame(proposal, combinedVotingPower)
 ```
@@ -81,11 +81,11 @@ example
 You can also compare what would happen if you simply summed the votes, so ignoring QF, and then converting to percentages:
 
 ```{r echo=FALSE}
-example$simpleVotingInstead <- c(21/46, 3/46, 23/46)# square the values
+example$simpleVotingInstead <- c(25/66, 3/66, 38/66)# square the values
 example
 ```
 
-Compared to simply summing votes, QF gave proposal 1 more weight because there were more people voting for it, and it made proposal 2 less interesting as only one person voted for it while the others had multiple.
+Compared to simply summing votes, QF gave proposal 1 more weight because there were more people voting for it, and it made proposal 2 less interesting as only one person voted for it while the others had multiple. And proposal 3 had a whale voting for it and would get most funding in a simple funding round, but with QF proposal 1 got more.
 
 ---
 
@@ -119,7 +119,10 @@ votingPower
 ---
 
 Now, since we'll be using the Snapshot mechanism for voting, and specifically the Scattershot fork as it allows for multiple-choice voting, the way people assign voting power is clicking on the proposals as many times as you want to divide up your voting power: 
-![Test](C:/scattershot_voting.PNG)
+
+
+
+![](C:/scattershot_voting.PNG)
 
 You can test yourself here: https://scattershot.page/#/ren-project.eth/proposal/QmXFZaWC8uBUMXNTgGyib7YL6QyDWBSVWoTV62kPB6z1DP
 
@@ -127,7 +130,7 @@ You can test yourself here: https://scattershot.page/#/ren-project.eth/proposal/
 
 **So let's start with the case where people would just be voting randomly:**
 
-(if you want to see the code for this, check out this script)
+(if you want to see the code for this, check out the [markdown file](https://github.com/MaximilianR/quadratic-funding-rounds/blob/main/report.Rmd))
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 voterVotingSplit <- rpois(100, 4) # a poisson draw gives whole numbers which is useful in this case
@@ -178,7 +181,7 @@ As you see there, we have a bunch of rows of votes on different proposals with t
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(magrittr)
 library(tidyverse)
-# in the data frame people have sometimes multiple votes per proposal because of how I constructed the simulation, so I have to fix this first by combining them before doing the QF
+# in the data frame people have sometimes multiple votes per proposal because of how I constructed the simulation, so I have to fix this first by combining them before doing the QF, otherwise that biases things incorrectly
 
 sqrtVotes <- votingResults %>%
   group_by(voterID, voteForProp) %>%
@@ -199,7 +202,7 @@ proposals
 
 ```
 
-**With those funding percentages per proposal, we can now see if the proposal will get funding. But it depends on what the proposal's target is, and how much money is in the funding pool. If there is little money in the pool, the grant might not get passed the 'min' value, and in that case it won't get funding.**
+**With those funding percentages per proposal, we can now see how much of the funding pool has been assigned to each proposal. But the proposal's target will affect if it actually gets funded, and how much money is in the funding pool. If there is little money in the pool, the grant might not get passed the 'min' value, and in that case it won't get funding.**
 
 So imagine we have 3 different scenarios:
 
@@ -231,7 +234,7 @@ for (prop in 1:11) {
 proposals
 ```
 
-**If there isn't much money in the pool, and people vote randomly, likely only the proposals asking for little money will get any.**
+**If there isn't much money in the pool, and people vote randomly, likely only the proposals asking for small grants will get funded.**
 
 ```{r include=FALSE}
 proposals$poorPoolAlloc <- NULL
@@ -255,7 +258,7 @@ for (prop in 1:11) {
 proposals
 ```
 
-**If there is matched money in the pool, and people vote randomly, the proposals asking for a lot of money still might not get pass their min ask.**
+**If there is matched money in the pool, and people vote randomly, the proposals asking for a lot of money still might not pass their min ask, and then won't get funded.**
 
 
 ```{r include=FALSE}
@@ -365,7 +368,7 @@ for (prop in 1:11) {
 proposals
 ```
 
-**If there isn't much money in the pool, the popular proposals are much more likely to pass.**
+**If there isn't much money in the pool, the popular proposals are much more likely to pass, but not the others.**
 
 ```{r include=FALSE}
 proposals$poorPoolAlloc <- NULL
@@ -389,7 +392,7 @@ for (prop in 1:11) {
 proposals
 ```
 
-**If there is matched money in the pool, the popular proposals are still much more likely to pass and pushes out the others.**
+**If there is matched money in the pool, the popular proposals are still much more likely to pass and inhibits the chance that the unpopular proposals get funded.**
 
 
 ```{r include=FALSE}
@@ -413,15 +416,27 @@ for (prop in 1:11) {
 proposals
 ```
 
-**If there is a lot of money in the pool, the popular proposals are still much more likely to pass and pushes out the others to fail.**
+**If there is a lot of money in the pool, the popular proposals will still inhibit the unpopular proposals to get funding.**
 
-So bad proposals are still likely not to get funded.
+So QF is good at filtering out spam on its own, we don't need to manually do that beforehand.
 
 
 ---
 
-## Summary
+## Conclusion
 
 - QF makes voting more democratic
+
+As we have seen, QF goes for the popular votes, and inhibits influence from whales, and ignores proposals that only one of a few people vote for
+
 - It matters how much money is in the funding pool
-- It matters how people vote. Even with little money in the pool, the popular proposals have a good chance. And with a lot of money in the pool, the unpopular proposals will likely not be funded
+
+This is a point to consider. If there are a lot of competing proposals, and they ask for a lot of funding relative to what the Community Ecosystem Fund has allocated to the funding round, there is a chance the proposals will inhibit the chances they will get funding. But in a rich environment, popular proposals are likely to get funded.
+
+
+A remaining question I still have is: 
+
+- What portion of the Community Ecosystem Fund should be allocated to the funding rounds? Also think in relation to the [Fast Lane proposal](https://forum.renproject.io/t/rfc-000-018-fast-lane-community-ecosystem-fund/743)
+
+
+Would appreciate any feedback on this question and the whole model overall, and critiques if you have any! 
