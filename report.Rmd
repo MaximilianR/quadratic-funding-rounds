@@ -427,11 +427,11 @@ So QF is good at filtering out spam on its own, we don't need to manually do tha
 
 - QF makes voting more democratic
 
-As we have seen, QF goes for the popular votes, and inhibits influence from whales, and ignores proposals that only one of a few people vote for
+As we have seen, QF goes for the popular votes, and inhibits influence from whales, and ignores proposals that only one of a few people vote for.
 
 - It matters how much money is in the funding pool
 
-This is a point to consider. If there are a lot of competing proposals, and they ask for a lot of funding relative to what the Community Ecosystem Fund has allocated to the funding round, there is a chance the proposals will inhibit the chances they will get funding. But in a rich environment, popular proposals are likely to get funded.
+This is a point to consider. If there are a lot of competing proposals, and they ask for a lot of funding relative to what the Community Ecosystem Fund has allocated to the funding round, there is a chance the proposals will inhibit each others in the competition, and might mean none of them get any. But in a rich environment, popular proposals are likely to get funded.
 
 
 A remaining question I still have is: 
