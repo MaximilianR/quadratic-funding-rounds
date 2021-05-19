@@ -167,7 +167,261 @@ head(votingResults, 10)
 tail(votingResults, 10)
 ```
 
-As you see there, we have a bunch of rows of votes on different proposals with the voting power amount, and this is similar to the data you would grab from Scattershot after the vote is complete.
+As you see there, we have a bunch of rows of votes on different proposals with the voting power amount, and this is similar to the data anyone could grab from Scattershot after the vote is complete.
 
 
 
+---
+
+**After doing the QF process, here are the results for our 10 proposals, including the percentages:**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(magrittr)
+library(tidyverse)
+# in the data frame people have sometimes multiple votes per proposal because of how I constructed the simulation, so I have to fix this first by combining them before doing the QF
+
+sqrtVotes <- votingResults %>%
+  group_by(voterID, voteForProp) %>%
+  summarise(sqrtVote = sqrt(sum(votingPowerFrac)))
+
+proposals$QVP <- 0
+
+for (prop in 1:11) {
+  proposals[prop,]$QVP <- sum(sqrtVotes[sqrtVotes$voteForProp == prop,]$sqrtVote)^2
+}
+proposals$fundPercent <- 0
+
+for (prop in 1:11) {
+  proposals[prop,]$fundPercent <-  proposals[prop,]$QVP / sum(proposals$QVP)
+}
+
+proposals
+
+```
+
+**With those funding percentages per proposal, we can now see if the proposal will get funding. But it depends on what the proposal's target is, and how much money is in the funding pool. If there is little money in the pool, the grant might not get passed the 'min' value, and in that case it won't get funding.**
+
+So imagine we have 3 different scenarios:
+
+- Our funding pool is poor (it has less than a third of the money than all the proposals' targets combined)
+- There is as much money in the funding pool as the proposals ask for combined
+- There is 3x as much money as the proposals ask for combined
+
+```{r include=FALSE}
+proposals$poorPoolAlloc <- 0
+proposals$poorPoolPASS <- FALSE
+
+
+poorPool <- sum(target)/3
+matched <- sum(target)
+richPool <- sum(target)*3
+
+
+for (prop in 1:11) {
+  
+  proposals[prop,]$poorPoolAlloc <- poorPool * proposals[prop,]$fundPercent
+  proposals[prop,]$poorPoolPASS <- ifelse(proposals[prop,]$poorPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there isn't much money in the pool, and people vote randomly, likely only the proposals asking for little money will get any.**
+
+```{r include=FALSE}
+proposals$poorPoolAlloc <- NULL
+proposals$poorPoolPASS <- NULL
+proposals$matchPoolAlloc <- 0
+proposals$matchPoolPASS <- FALSE
+
+
+
+for (prop in 1:11) {
+
+  proposals[prop,]$matchPoolAlloc <- matched * proposals[prop,]$fundPercent
+  proposals[prop,]$matchPoolPASS <- ifelse(proposals[prop,]$matchPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there is matched money in the pool, and people vote randomly, the proposals asking for a lot of money still might not get pass their min ask.**
+
+
+```{r include=FALSE}
+
+proposals$matchPoolAlloc <- NULL
+proposals$matchPoolPASS <- NULL
+proposals$richPoolAlloc <- 0
+proposals$richPoolPASS <- FALSE
+
+
+for (prop in 1:11) {
+
+  proposals[prop,]$richPoolAlloc <- richPool * proposals[prop,]$fundPercent
+  proposals[prop,]$richPoolPASS <- ifelse(proposals[prop,]$richPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there is a lot of money in the pool, and people vote randomly, it's likely that all proposals will be funded.**
+
+
+---
+
+### If there are a few popular proposals (0, 6, and 10)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+voterVotingSplit <- rpois(100, 3) # a poisson draw gives whole numbers which is useful in this case
+voterVotingSplit[voterVotingSplit == 0] <- 1 # make sure that a voter at least votes for one thing
+
+voterID <- 0
+votingIDPower <- 0
+voteForProp <- 0
+votingPowerFrac <- 0
+
+votingResults <- data.frame(voterID, votingIDPower, voteForProp, votingPowerFrac)
+
+
+# voting algo
+
+for (voter in 1:nVoters){
+  for (cast in 1:voterVotingSplit[voter]){
+    
+    voterID <- voter
+    votingIDPower <- votingPower[voter]
+    voteForProp <- sample(1:11, 1, prob = c(10,1,1,1,1,1,10,1,1,1,10))
+    votingPowerFrac <- votingPower[voter]/voterVotingSplit[voter]
+    
+    tempDF <- data.frame(voterID, votingIDPower, voteForProp, votingPowerFrac)
+    votingResults <- rbind(votingResults, tempDF)
+    
+  }
+}
+votingResults <- votingResults[-1,]
+rownames(votingResults) <- NULL
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+sqrtVotes <- votingResults %>%
+  group_by(voterID, voteForProp) %>%
+  summarise(sqrtVote = sqrt(sum(votingPowerFrac)))
+
+proposals$QVP <- 0
+
+for (prop in 1:11) {
+  proposals[prop,]$QVP <- sum(sqrtVotes[sqrtVotes$voteForProp == prop,]$sqrtVote)^2
+}
+proposals$fundPercent <- 0
+
+for (prop in 1:11) {
+  proposals[prop,]$fundPercent <-  proposals[prop,]$QVP / sum(proposals$QVP)
+}
+
+```
+
+
+
+```{r include=FALSE}
+proposals$richPoolAlloc <- NULL
+proposals$richPoolPASS <- NULL
+proposals$poorPoolAlloc <- 0
+proposals$poorPoolPASS <- FALSE
+
+
+poorPool <- sum(target)/3
+matched <- sum(target)
+richPool <- sum(target)*3
+
+
+for (prop in 1:11) {
+  
+  proposals[prop,]$poorPoolAlloc <- poorPool * proposals[prop,]$fundPercent
+  proposals[prop,]$poorPoolPASS <- ifelse(proposals[prop,]$poorPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there isn't much money in the pool, the popular proposals are much more likely to pass.**
+
+```{r include=FALSE}
+proposals$poorPoolAlloc <- NULL
+proposals$poorPoolPASS <- NULL
+proposals$matchPoolAlloc <- 0
+proposals$matchPoolPASS <- FALSE
+
+
+
+for (prop in 1:11) {
+
+  proposals[prop,]$matchPoolAlloc <- matched * proposals[prop,]$fundPercent
+  proposals[prop,]$matchPoolPASS <- ifelse(proposals[prop,]$matchPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there is matched money in the pool, the popular proposals are still much more likely to pass and pushes out the others.**
+
+
+```{r include=FALSE}
+
+proposals$matchPoolAlloc <- NULL
+proposals$matchPoolPASS <- NULL
+proposals$richPoolAlloc <- 0
+proposals$richPoolPASS <- FALSE
+
+
+for (prop in 1:11) {
+
+  proposals[prop,]$richPoolAlloc <- richPool * proposals[prop,]$fundPercent
+  proposals[prop,]$richPoolPASS <- ifelse(proposals[prop,]$richPoolAlloc > proposals[prop,]$min, TRUE, FALSE) 
+}
+
+```
+
+
+```{r echo=FALSE}
+proposals
+```
+
+**If there is a lot of money in the pool, the popular proposals are still much more likely to pass and pushes out the others to fail.**
+
+So bad proposals are still likely not to get funded.
+
+
+---
+
+## Summary
+
+- QF makes voting more democratic
+- It matters how much money is in the funding pool
+- It matters how people vote. Even with little money in the pool, the popular proposals have a good chance. And with a lot of money in the pool, the unpopular proposals will likely not be funded
