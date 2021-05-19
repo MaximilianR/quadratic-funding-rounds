@@ -1,0 +1,91 @@
+---
+title: "Ren Quadratic Funding Rounds"
+author: "Maximilian Roszko"
+date: '2021-05-18'
+output: html_document
+---
+
+
+Quadratic Funding (QF) is a method to make funding more democratic, in any system where there is a group of people that are interested in a set of proposals, and they all have varying amounts of voting power/money that they are contributing. It makes it more democratic by biasing the funding towards proposals that have a higher number of supporters for it, instead of simply summing the voting power/money each proposal gets and letting that decide, because otherwise one wealthy/influential person could dictate where most of the funding was distributed, instead of the voice of the majority.
+
+QF can have different shapes depending on the who, what, when, where, and why. For example, on [Gitcoin](https://www.gitcoin.co), they have funding rounds where the public can donate to certain projects, and then there is a separate pool of money coming from sponsors like the Ethereum Foundation, which gets distributed to the projects based on how the public donated to these projects. The public's donations can be seen as votes, where the more votes a project received, the more matching it got from the sponsor pool. But crucially, the function that determines how much matching a project received is biased towards projects that had a higher number of individual donors to it, and not simply the amount of money (voting power) it got, which could come from a single person.
+
+In the case of designing Ren's QF rounds, we already have every Darknode Operator (DNO) providing to the Community Fund, and we already have established DNOs as those with voting power in [RIP-000-004](https://forum.renproject.io/t/rip-000-004-add-snapshot-as-a-signaling-mechanism-for-rips/686), where the voting power also nicely tracks how much a DNO has been contributing to the Community Fund.
+
+So we can simply let DNOs distribute their voting power towards the proposals they support in a Funding Round, and have that dictate how much funding the different proposals receive (with some caveats)! Very elegant.
+
+Below is a proposal for how Quadratic Funding could take place for Ren, with concrete numbers to provide some intuition for how it could turn out in reality. The numbers are made up but shows the outcome of a Funding Round where there are 10 proposals in it. I am including how it would look like if people were voting randomly, as well as how it would look like if there were a few very popular proposals that most people voted for. And for both of those cases I'll be showing how the amount of capital in the funding pool would influence the funding for the proposals.
+
+---
+
+**Now, imagine these proposals:**
+```{r}
+id <- 0:10
+target <- c(0, 500, 2000, 3500, 4400, 5000, 9000, 10000, 12000, 18000, 25000) # in USD
+min <- target/2
+max <- target*2
+proposals <- data.frame(id, target, min, max)
+proposals
+```
+
+The first thing you might notice is why are there 11 proposals, not 10? This is because we need a way for DNOs to vote 'No', as in 'I do not want that funding should be going to any of the proposals in this round'.
+
+Second, you might notice that there is something called a **target**, and a **min** and a **max** as well. This is a design decision we are proposing, that makes sure that money is not wasted on a proposal that is unable to lift of the ground, as most projects need a certain amount of funding to be viable. The max is for putting a ceiling on the max amount so we are not overspending on something that only needs a certain amount of funding to work as intended. Here specifically we've chosen a range that is half of the target, to twice the target. It means that any proposer will need to provide a target number in the proposal.
+
+You might also notice that targets are not specified in BTC. For the voting outcome not to shift throughout the voting period simply because of price volatility, we also propose that targets are specified in USD and that the Community Fund exchanges some of its assets into a stablecoin like DAI before the Funding Round, and distribute the grants in that stablecoin. 
+
+---
+
+**Imagine some voters with their voting powers:**
+
+```{r}
+nVoters <- 100
+votingPower <- rbeta(nVoters, 1, 4)*40 + 1 # random voting power values that are similar to current DNO voting powers
+votingPower
+```
+
+---
+
+**And then cast their votes randomly:**
+
+(if you want to see the code for this, check out this script)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+voterVotingSplit <- rpois(100, 4) # a poisson draw gives whole numbers which is useful in this case
+voterVotingSplit[voterVotingSplit == 0] <- 1 # make sure that a voter at least votes for one thing
+
+voterID <- 0
+votingIDPower <- 0
+voteForProp <- 0
+votingPowerFrac <- 0
+
+votingResults <- data.frame(voterID, votingIDPower, voteForProp, votingPowerFrac)
+
+
+# voting algo
+
+for (voter in 1:nVoters){
+  for (cast in 1:voterVotingSplit[voter]){
+    
+    voterID <- voter
+    votingIDPower <- votingPower[voter]
+    voteForProp <- sample(1:11, 1)
+    votingPowerFrac <- votingPower[voter]/voterVotingSplit[voter]
+    
+    tempDF <- data.frame(voterID, votingIDPower, voteForProp, votingPowerFrac)
+    votingResults <- rbind(votingResults, tempDF)
+    
+  }
+}
+votingResults <- votingResults[-1,]
+rownames(votingResults) <- NULL
+head(votingResults, 10)
+
+
+```
+...
+```{r echo=FALSE}
+tail(votingResults, 10)
+```
+
+
