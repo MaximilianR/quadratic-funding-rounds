@@ -18,7 +18,78 @@ Below is a proposal for how Quadratic Funding could take place for Ren, with con
 
 ---
 
-**Now, imagine these proposals:**
+**So how does the QF algorithm work:**
+
+The QF algorithm works very simply like this:
+
+- Take the square root (√) of every vote. So if I have 10 voting power, and I assign 5 VP to one proposal, and 3 VP to another and 2 VP to a third one, those are three different votes, so each one is square rooted separately.
+- For each proposal, sum up all the votes for it (votes which have been square rooted)
+- Then you square (^2) the summed up values for each proposal.
+
+What you are left with then is a number you can convert to a percentage that it should get from the funding pool.
+
+Here is a simplified example:
+
+```{r include=FALSE}
+vote <- c(5, 3, 2, 6, 10, 20)
+voter <- c(1, 1, 1, 2, 2, 3)
+proposal <- c(1, 2, 3, 1, 1, 3)
+
+example <- data.frame(vote, voter, proposal)
+```
+
+```{r echo=FALSE}
+example
+```
+
+Take the square root:
+```{r}
+example$vote <- sqrt(example$vote) # take the square root of every vote
+```
+
+```{r echo=FALSE}
+example
+```
+
+```{r include=FALSE}
+proposal <- c(1, 2, 3)
+combinedVotingPower <- c(7.847836, 1.732051, 5.88635)
+
+example <- data.frame(proposal, combinedVotingPower)
+```
+Combine (sum) the votes for each proposal:
+```{r echo=FALSE}
+example
+```
+
+Square out the values again:
+```{r}
+example$combinedVotingPower <- (example$combinedVotingPower)^2 # square the values
+```
+
+```{r echo=FALSE}
+example
+```
+
+Then you can convert these to percentages:
+
+```{r echo=FALSE}
+example$combinedVotingPower <- (example$combinedVotingPower)/sum(example$combinedVotingPower) # square the values
+example
+```
+
+You can also compare what would happen if you simply summed the votes, so ignoring QF, and then converting to percentages:
+
+```{r echo=FALSE}
+example$simpleVotingInstead <- c(21/46, 3/46, 23/46)# square the values
+example
+```
+
+Compared to simply summing votes, QF gave proposal 1 more weight because there were more people voting for it, and it made proposal 2 less interesting as only one person voted for it while the others had multiple.
+
+---
+
+**So let's imagine some realistic proposals:**
 ```{r}
 id <- 0:10
 target <- c(0, 500, 2000, 3500, 4400, 5000, 9000, 10000, 12000, 18000, 25000) # in USD
@@ -30,7 +101,7 @@ proposals
 
 The first thing you might notice is why are there 11 proposals, not 10? This is because we need a way for DNOs to vote 'No', as in 'I do not want that funding should be going to any of the proposals in this round'.
 
-Second, you might notice that there is something called a **target**, and a **min** and a **max** as well. This is a design decision we are proposing, that makes sure that money is not wasted on a proposal that is unable to lift of the ground, as most projects need a certain amount of funding to be viable. The max is for putting a ceiling on the max amount so we are not overspending on something that only needs a certain amount of funding to work as intended. Here specifically we've chosen a range that is half of the target, to twice the target. It means that any proposer will need to provide a target number in the proposal.
+Second, you might notice that there is something called a **target**, and a **min** and a **max** as well. This is a design decision we are proposing, that makes sure that money is not wasted on a proposal that is unable to lift of the ground, as most projects need a certain amount of funding to be viable. The max is for putting a ceiling on the max amount we can give to a proposal, so we are not overspending on something that only needs a certain amount of funding to work as intended. Here specifically we've chosen a range that is half of the target, to twice the target. It means that any proposer will need to provide a target number in the proposal.
 
 You might also notice that targets are not specified in BTC. For the voting outcome not to shift throughout the voting period simply because of price volatility, we also propose that targets are specified in USD and that the Community Fund exchanges some of its assets into a stablecoin like DAI before the Funding Round, and distribute the grants in that stablecoin. 
 
@@ -40,13 +111,21 @@ You might also notice that targets are not specified in BTC. For the voting outc
 
 ```{r}
 nVoters <- 100
-votingPower <- rbeta(nVoters, 1, 4)*40 + 1 # random voting power values that are similar to current DNO voting powers
+votingPower <- rbeta(nVoters, 1, 4)*40 # random voting power values that are similar to current DNO voting powers
 votingPower
 ```
 
+
 ---
 
-**And then cast their votes randomly:**
+Now, since we'll be using the Snapshot mechanism for voting, and specifically the Scattershot fork as it allows for multiple-choice voting, the way people assign voting power is clicking on the proposals as many times as you want to divide up your voting power: 
+![Test](C:/scattershot_voting.PNG)
+
+You can test yourself here: https://scattershot.page/#/ren-project.eth/proposal/QmXFZaWC8uBUMXNTgGyib7YL6QyDWBSVWoTV62kPB6z1DP
+
+
+
+**So let's start with the case where people would just be voting randomly:**
 
 (if you want to see the code for this, check out this script)
 
@@ -87,5 +166,8 @@ head(votingResults, 10)
 ```{r echo=FALSE}
 tail(votingResults, 10)
 ```
+
+As you see there, we have a bunch of rows of votes on different proposals with the voting power amount, and this is similar to the data you would grab from Scattershot after the vote is complete.
+
 
 

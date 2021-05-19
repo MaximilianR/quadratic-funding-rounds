@@ -1,0 +1,1 @@
+A little tutorial on how the Quadratic Funding would work at Ren
